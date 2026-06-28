@@ -8,12 +8,11 @@ export default class GameScene extends Phaser.Scene {
   create() {
     const { width, height } = this.cameras.main;
 
-    // Background is already black by default if config is set,
-    // but we can ensure it here or via the config.
+    // Ensure black background
     this.cameras.main.setBackgroundColor('#000000');
 
-    // Display white text "Math Chase" centered
-    const text = this.add.text(width / 2, height / 2, 'Math Chase', {
+    // Display "Game Scene" centered
+    const text = this.add.text(width / 2, height / 2, 'Game Scene', {
       fontSize: '48px',
       fill: '#ffffff',
       fontFamily: 'Arial'

@@ -8,6 +8,9 @@ export default class BootScene extends Phaser.Scene {
   preload() {
     const { width, height } = this.cameras.main;
 
+    // Black background
+    this.cameras.main.setBackgroundColor('#000000');
+
     // Create loading bar
     const progressBar = this.add.graphics();
     const progressBox = this.add.graphics();
@@ -51,9 +54,8 @@ export default class BootScene extends Phaser.Scene {
       percentText.destroy();
     });
 
-    // Load assets safely (using placeholders for now as we don't have actual assets)
     // In a real scenario, you would load images, audio, etc. here.
-    // this.load.image('logo', 'assets/images/logo.png');
+    // Since there are no real assets yet, the transition will be almost instant.
   }
 
   create() {

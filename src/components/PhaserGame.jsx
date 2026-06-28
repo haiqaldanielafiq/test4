@@ -1,8 +1,8 @@
 import { useEffect, useRef } from 'react';
 import Phaser from 'phaser';
-import BootScene from '../scenes/BootScene';
-import MenuScene from '../scenes/MenuScene';
-import GameScene from '../scenes/GameScene';
+import BootScene from '../game/scenes/BootScene';
+import MenuScene from '../game/scenes/MenuScene';
+import GameScene from '../game/scenes/GameScene';
 
 const PhaserGame = () => {
   const gameRef = useRef(null);
