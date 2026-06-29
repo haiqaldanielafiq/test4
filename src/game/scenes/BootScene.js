@@ -55,10 +55,53 @@ export default class BootScene extends Phaser.Scene {
     });
 
     // In a real scenario, you would load images, audio, etc. here.
-    // Since there are no real assets yet, the transition will be almost instant.
+    // Programmatically generate assets
+    this.generateAssets();
+  }
+
+  generateAssets() {
+    // Generate Neon Blue Wall Tile
+    const wallGraphics = this.make.graphics({ x: 0, y: 0, add: false });
+    wallGraphics.lineStyle(2, 0x0000ff);
+    wallGraphics.strokeRect(2, 2, 28, 28);
+    wallGraphics.generateTexture('wall', 32, 32);
+
+    // Generate Pac-Man (Mouth Closed)
+    const pacmanClosed = this.make.graphics({ x: 0, y: 0, add: false });
+    pacmanClosed.fillStyle(0xffff00, 1);
+    pacmanClosed.fillCircle(16, 16, 14);
+    pacmanClosed.generateTexture('pacman-closed', 32, 32);
+
+    // Generate Pac-Man (Mouth Open)
+    const pacmanOpen = this.make.graphics({ x: 0, y: 0, add: false });
+    pacmanOpen.fillStyle(0xffff00, 1);
+    // Draw a pie shape for mouth open
+    pacmanOpen.beginPath();
+    pacmanOpen.moveTo(16, 16);
+    pacmanOpen.arc(16, 16, 14, Phaser.Math.DegToRad(30), Phaser.Math.DegToRad(330));
+    pacmanOpen.closePath();
+    pacmanOpen.fill();
+    pacmanOpen.generateTexture('pacman-open', 32, 32);
+
+    // Generate Coin
+    const coinGraphics = this.make.graphics({ x: 0, y: 0, add: false });
+    coinGraphics.fillStyle(0xffff00, 1);
+    coinGraphics.fillCircle(8, 8, 4);
+    coinGraphics.generateTexture('coin', 16, 16);
   }
 
   create() {
+    // Create Pac-Man animation
+    this.anims.create({
+      key: 'pacman-chomp',
+      frames: [
+        { key: 'pacman-closed' },
+        { key: 'pacman-open' }
+      ],
+      frameRate: 10,
+      repeat: -1
+    });
+
     this.scene.start('MenuScene');
   }
 }
