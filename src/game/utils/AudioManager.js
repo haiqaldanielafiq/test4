@@ -1,18 +1,29 @@
 class AudioManager {
   constructor() {
-    this.context = new (window.AudioContext || window.webkitAudioContext)();
-    this.enabled = true;
-    this.musicEnabled = true;
+    this.context = null;
+    this.enabled = localStorage.getItem('mathchase-sound-enabled') !== 'false';
+    this.musicEnabled = localStorage.getItem('mathchase-music-enabled') !== 'false';
     this.masterVolume = 0.5;
     this.currentMusic = null;
   }
 
+  initContext() {
+    if (!this.context) {
+      this.context = new (window.AudioContext || window.webkitAudioContext)();
+    }
+    if (this.context.state === 'suspended') {
+      this.context.resume();
+    }
+  }
+
   toggleSound(enabled) {
     this.enabled = enabled;
+    localStorage.setItem('mathchase-sound-enabled', enabled);
   }
 
   toggleMusic(enabled) {
     this.musicEnabled = enabled;
+    localStorage.setItem('mathchase-music-enabled', enabled);
     if (!enabled && this.currentMusic) {
       this.currentMusic.stop();
     } else if (enabled && this.currentMusic) {
@@ -22,6 +33,7 @@ class AudioManager {
 
   playTone(freq, type, duration, volume = 0.1) {
     if (!this.enabled) return;
+    this.initContext();
 
     const osc = this.context.createOscillator();
     const gain = this.context.createGain();
@@ -95,7 +107,10 @@ class AudioManager {
 
     playBar();
     this.currentMusic = {
-      stop: () => clearTimeout(this.musicTimer),
+      stop: () => {
+        clearTimeout(this.musicTimer);
+        this.currentMusic = null;
+      },
       start: () => playBar()
     };
   }

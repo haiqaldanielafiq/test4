@@ -12,18 +12,22 @@ export default class BootScene extends Phaser.Scene {
     this.cameras.main.setBackgroundColor('#000000');
 
     // Create loading bar
-    const progressBar = this.add.graphics();
     const progressBox = this.add.graphics();
     progressBox.fillStyle(0x222222, 0.8);
-    progressBox.fillRect(width / 2 - 160, height / 2 - 25, 320, 50);
+    progressBox.fillRoundedRect(width / 2 - 160, height / 2 - 25, 320, 50, 10);
+    progressBox.lineStyle(2, 0xffffff, 0.2);
+    progressBox.strokeRoundedRect(width / 2 - 160, height / 2 - 25, 320, 50, 10);
+
+    const progressBar = this.add.graphics();
 
     const loadingText = this.make.text({
       x: width / 2,
-      y: height / 2 - 50,
-      text: 'Loading...',
+      y: height / 2 - 60,
+      text: 'LOADING MATH CHASE...',
       style: {
-        font: '20px monospace',
-        fill: '#ffffff'
+        font: '24px monospace',
+        fill: '#ffffff',
+        fontWeight: 'bold'
       }
     });
     loadingText.setOrigin(0.5, 0.5);
@@ -41,10 +45,10 @@ export default class BootScene extends Phaser.Scene {
 
     // Progress bar events
     this.load.on('progress', (value) => {
-      percentText.setText(parseInt(value * 100) + '%');
+      percentText.setText(Math.floor(value * 100) + '%');
       progressBar.clear();
-      progressBar.fillStyle(0xffffff, 1);
-      progressBar.fillRect(width / 2 - 150, height / 2 - 15, 300 * value, 30);
+      progressBar.fillStyle(0xffff00, 1);
+      progressBar.fillRoundedRect(width / 2 - 150, height / 2 - 15, 300 * value, 30, 5);
     });
 
     this.load.on('complete', () => {
@@ -54,7 +58,6 @@ export default class BootScene extends Phaser.Scene {
       percentText.destroy();
     });
 
-    // In a real scenario, you would load images, audio, etc. here.
     // Programmatically generate assets
     this.generateAssets();
   }

@@ -1,5 +1,6 @@
 import Phaser from 'phaser';
 import audioManager from '../utils/AudioManager';
+import SceneHelper from '../utils/SceneHelper';
 
 export default class LevelCompleteScene extends Phaser.Scene {
   constructor() {
@@ -14,77 +15,72 @@ export default class LevelCompleteScene extends Phaser.Scene {
 
   create() {
     const { width, height } = this.cameras.main;
+    SceneHelper.addFadeIn(this);
     audioManager.playVictory();
 
-    const title = this.add.text(width / 2, height * 0.3, 'LEVEL COMPLETE!', {
-      fontSize: '84px',
+    // Celebration background
+    const overlay = this.add.graphics();
+    overlay.fillGradientStyle(0x000033, 0x000033, 0x003300, 0x003300, 1);
+    overlay.fillRect(0, 0, width, height);
+
+    const title = this.add.text(width / 2, height * 0.25, 'LEVEL COMPLETE!', {
+      fontSize: '100px',
       fill: '#ffff00',
       fontFamily: 'Arial Black',
       stroke: '#000000',
-      strokeThickness: 8
+      strokeThickness: 10
     }).setOrigin(0.5);
 
     // Victory animation
     this.tweens.add({
       targets: title,
-      scale: 1.2,
-      angle: 5,
+      scale: 1.1,
+      angle: 2,
       duration: 500,
       yoyo: true,
-      repeat: 3,
+      repeat: -1,
       ease: 'Quad.easeInOut'
     });
 
-    this.add.text(width / 2, height * 0.5, `Current Score: ${this.score}`, {
-      fontSize: '40px',
+    this.add.text(width / 2, height * 0.45, `Current Score: ${this.score}`, {
+      fontSize: '48px',
       fill: '#ffffff',
       fontFamily: 'Arial',
       fontWeight: 'bold'
     }).setOrigin(0.5);
 
-    this.add.text(width / 2, height * 0.58, `Level ${this.level} Cleared!`, {
-      fontSize: '32px',
+    this.add.text(width / 2, height * 0.55, `Level ${this.level} Cleared!`, {
+      fontSize: '40px',
       fill: '#00ff00',
       fontFamily: 'Arial',
       fontStyle: 'italic'
     }).setOrigin(0.5);
 
-    const nextBtn = this.add.container(width / 2, height * 0.75);
-    const btnBg = this.add.graphics();
-    btnBg.fillStyle(0xffffff, 1);
-    btnBg.fillRoundedRect(-150, -40, 300, 80, 20);
-
-    const btnText = this.add.text(0, 0, 'Next Level', {
-      fontSize: '32px',
-      fill: '#000000',
-      fontFamily: 'Arial',
-      fontWeight: 'bold'
-    }).setOrigin(0.5);
-
-    nextBtn.add([btnBg, btnText]);
-
-    const hitArea = new Phaser.Geom.Rectangle(-150, -40, 300, 80);
-    nextBtn.setInteractive(hitArea, Phaser.Geom.Rectangle.Contains);
-
-    nextBtn.on('pointerdown', () => {
-      audioManager.playClick();
-      this.scene.start('GameScene', {
+    const btnNext = SceneHelper.createButton(this, width / 2, height * 0.75, 'Next Level', () => {
+      SceneHelper.transitionTo(this, 'GameScene', {
         score: this.score,
         lives: this.lives,
         level: this.level + 1
       });
     });
 
-    nextBtn.on('pointerover', () => {
-      btnBg.clear();
-      btnBg.fillStyle(0xffff00, 1);
-      btnBg.fillRoundedRect(-150, -40, 300, 80, 20);
-    });
+    const btnMenu = SceneHelper.createButton(this, width / 2, height * 0.87, 'Main Menu', () => {
+        SceneHelper.transitionTo(this, 'MenuScene');
+    }, { width: 300, height: 60, fontSize: '24px' });
 
-    nextBtn.on('pointerout', () => {
-      btnBg.clear();
-      btnBg.fillStyle(0xffffff, 1);
-      btnBg.fillRoundedRect(-150, -40, 300, 80, 20);
+    SceneHelper.setupKeyboardNav(this, [btnNext, btnMenu]);
+
+    // Simple celebration particles
+    this.add.particles(0, 0, 'coin-0', {
+        x: { min: 0, max: width },
+        y: -50,
+        speedY: { min: 200, max: 400 },
+        speedX: { min: -50, max: 50 },
+        scale: { start: 1, end: 0.5 },
+        alpha: { start: 1, end: 0 },
+        lifespan: 3000,
+        frequency: 100,
+        gravityY: 100
     });
   }
 }

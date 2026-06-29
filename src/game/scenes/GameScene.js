@@ -2,6 +2,7 @@ import Phaser from 'phaser';
 import Player from '../objects/Player';
 import Ghost from '../objects/Ghost';
 import audioManager from '../utils/AudioManager';
+import SceneHelper from '../utils/SceneHelper';
 
 export default class GameScene extends Phaser.Scene {
   constructor() {
@@ -48,8 +49,10 @@ export default class GameScene extends Phaser.Scene {
   }
 
   create() {
+    audioManager.initContext();
     audioManager.startMusic();
     this.cameras.main.setBackgroundColor('#000000');
+    SceneHelper.addFadeIn(this);
 
     this.walls = this.physics.add.staticGroup();
     this.coins = this.physics.add.group();
@@ -60,28 +63,26 @@ export default class GameScene extends Phaser.Scene {
     const mazeHeight = this.maze.length * this.tileSize;
 
     // Center maze in world
-    const offsetX = (this.cameras.main.width - mazeWidth) / 2;
-    const offsetY = (this.cameras.main.height - mazeHeight) / 2;
+    this.offsetX = (this.cameras.main.width - mazeWidth) / 2;
+    this.offsetY = (this.cameras.main.height - mazeHeight) / 2;
 
     this.totalCoins = 0;
     this.coinsCollected = 0;
 
     for (let row = 0; row < this.maze.length; row++) {
       for (let col = 0; col < this.maze[row].length; col++) {
-        const x = offsetX + col * this.tileSize + this.tileSize / 2;
-        const y = offsetY + row * this.tileSize + this.tileSize / 2;
+        const x = this.offsetX + col * this.tileSize + this.tileSize / 2;
+        const y = this.offsetY + row * this.tileSize + this.tileSize / 2;
 
         if (this.maze[row][col] === 1) {
           this.walls.create(x, y, 'wall');
         } else {
-          // Add special coins at corners
           if ((row === 1 && col === 1) || (row === 1 && col === 21) ||
               (row === 20 && col === 1) || (row === 20 && col === 21)) {
             const coin = this.specialCoins.create(x, y, 'special-coin-0');
             coin.play('special-coin-spin');
             this.totalCoins++;
           }
-          // Add coin in empty spaces (except middle area and special coin corners)
           else if (!(row >= 9 && row <= 11 && col >= 9 && col <= 13)) {
             const coin = this.coins.create(x, y, 'coin-0');
             coin.play('coin-spin');
@@ -91,21 +92,18 @@ export default class GameScene extends Phaser.Scene {
       }
     }
 
-    // Spawn Ghosts in the middle
     this.ghostSpawnPoints = [
-      { x: offsetX + 10 * this.tileSize + this.tileSize / 2, y: offsetY + 10 * this.tileSize + this.tileSize / 2, texture: 'ghost-red' },
-      { x: offsetX + 11 * this.tileSize + this.tileSize / 2, y: offsetY + 10 * this.tileSize + this.tileSize / 2, texture: 'ghost-pink' },
-      { x: offsetX + 12 * this.tileSize + this.tileSize / 2, y: offsetY + 10 * this.tileSize + this.tileSize / 2, texture: 'ghost-cyan' },
-      { x: offsetX + 13 * this.tileSize + this.tileSize / 2, y: offsetY + 10 * this.tileSize + this.tileSize / 2, texture: 'ghost-orange' }
+      { x: this.offsetX + 10 * this.tileSize + this.tileSize / 2, y: this.offsetY + 10 * this.tileSize + this.tileSize / 2, texture: 'ghost-red' },
+      { x: this.offsetX + 11 * this.tileSize + this.tileSize / 2, y: this.offsetY + 10 * this.tileSize + this.tileSize / 2, texture: 'ghost-pink' },
+      { x: this.offsetX + 12 * this.tileSize + this.tileSize / 2, y: this.offsetY + 10 * this.tileSize + this.tileSize / 2, texture: 'ghost-cyan' },
+      { x: this.offsetX + 13 * this.tileSize + this.tileSize / 2, y: this.offsetY + 10 * this.tileSize + this.tileSize / 2, texture: 'ghost-orange' }
     ];
 
     this.ghostSpawnPoints.forEach(point => {
       const ghost = new Ghost(this, point.x, point.y, point.texture);
-      // Increase ghost speed based on level
-      ghost.speed = 150 + (this.level - 1) * 20;
+      ghost.speed = 120 + (this.level - 1) * 15;
       this.ghosts.add(ghost);
 
-      // Spawn effect
       ghost.setAlpha(0);
       this.tweens.add({
         targets: ghost,
@@ -115,32 +113,24 @@ export default class GameScene extends Phaser.Scene {
       });
     });
 
-    // Add Player at a safe position (row 4, col 11)
-    const centerX = offsetX + 11 * this.tileSize + this.tileSize / 2;
-    const centerY = offsetY + 4 * this.tileSize + this.tileSize / 2;
+    const centerX = this.offsetX + 11 * this.tileSize + this.tileSize / 2;
+    const centerY = this.offsetY + 4 * this.tileSize + this.tileSize / 2;
     this.playerStartPos = { x: centerX, y: centerY };
     this.player = new Player(this, centerX, centerY);
 
-    // Collisions
-    this.physics.add.collider(this.player, this.walls);
     this.physics.add.collider(this.ghosts, this.walls);
     this.physics.add.overlap(this.player, this.coins, this.collectCoin, null, this);
     this.physics.add.overlap(this.player, this.specialCoins, this.collectSpecialCoin, null, this);
     this.physics.add.overlap(this.player, this.ghosts, this.handleGhostCollision, null, this);
 
-    // Camera setup
     this.cameras.main.startFollow(this.player, true, 0.1, 0.1);
-    this.cameras.main.setZoom(1);
 
-    // Input for pausing
     this.input.keyboard.on('keydown-ESC', () => {
       this.pauseGame();
     });
 
-    // HUD setup
     this.createHUD();
 
-    // Particle emitter for coins
     this.coinParticles = this.add.particles(0, 0, 'coin-0', {
       speed: { min: 50, max: 100 },
       scale: { start: 0.5, end: 0 },
@@ -157,29 +147,18 @@ export default class GameScene extends Phaser.Scene {
   }
 
   createHUD() {
-    this.scoreText = this.add.text(20, 20, `Score: ${this.score}`, {
+    const textStyle = {
       fontSize: '24px',
       fill: '#ffffff',
-      fontFamily: 'Arial'
-    }).setScrollFactor(0);
+      fontFamily: 'Arial',
+      stroke: '#000000',
+      strokeThickness: 4
+    };
 
-    this.livesText = this.add.text(20, 50, `Lives: ${this.lives}`, {
-      fontSize: '24px',
-      fill: '#ffffff',
-      fontFamily: 'Arial'
-    }).setScrollFactor(0);
-
-    this.coinsText = this.add.text(20, 80, `Coins: ${this.coinsCollected}/${this.totalCoins}`, {
-      fontSize: '24px',
-      fill: '#ffffff',
-      fontFamily: 'Arial'
-    }).setScrollFactor(0);
-
-    this.levelText = this.add.text(20, 110, `Level: ${this.level}`, {
-      fontSize: '24px',
-      fill: '#ffffff',
-      fontFamily: 'Arial'
-    }).setScrollFactor(0);
+    this.scoreText = this.add.text(20, 20, `Score: ${this.score}`, textStyle).setScrollFactor(0).setDepth(100);
+    this.livesText = this.add.text(20, 50, `Lives: ${this.lives}`, textStyle).setScrollFactor(0).setDepth(100);
+    this.coinsText = this.add.text(20, 80, `Coins: ${this.coinsCollected}/${this.totalCoins}`, textStyle).setScrollFactor(0).setDepth(100);
+    this.levelText = this.add.text(20, 110, `Level: ${this.level}`, textStyle).setScrollFactor(0).setDepth(100);
   }
 
   update(time, delta) {
@@ -190,37 +169,31 @@ export default class GameScene extends Phaser.Scene {
       ghost.update(time, delta);
     });
 
-    // Bonus coin logic
     this.bonusCoinTimer += delta;
-    if (this.bonusCoinTimer > 15000) { // Every 15 seconds
+    if (this.bonusCoinTimer > 20000) {
       this.bonusCoinTimer = 0;
       this.spawnBonusCoin();
     }
   }
 
   spawnBonusCoin() {
-    const { width, height } = this.cameras.main;
-    const x = Phaser.Math.Between(100, width - 100);
-    const y = Phaser.Math.Between(100, height - 100);
+    const x = Phaser.Math.Between(this.offsetX + 32, this.offsetX + (this.maze[0].length-2) * 32);
+    const y = Phaser.Math.Between(this.offsetY + 32, this.offsetY + (this.maze.length-2) * 32);
 
     const bonus = this.specialCoins.create(x, y, 'special-coin-0');
     bonus.setTint(0x00ff00);
     bonus.play('special-coin-spin');
 
-    // Auto destroy after 5 seconds if not collected
-    this.time.delayedCall(5000, () => {
+    this.time.delayedCall(8000, () => {
       if (bonus.active) bonus.destroy();
     });
   }
 
   collectCoin(player, coin) {
     audioManager.playCoin();
-
     this.coinParticles.emitParticleAt(coin.x, coin.y, 5);
-
     coin.destroy();
 
-    // Combo system
     this.combo++;
     if (this.comboTimer) clearTimeout(this.comboTimer);
     this.comboTimer = setTimeout(() => {
@@ -251,14 +224,14 @@ export default class GameScene extends Phaser.Scene {
 
     if (this.lives <= 0) {
       this.saveHighScore();
-      this.scene.start('GameOverScene', { score: this.score });
+      SceneHelper.transitionTo(this, 'GameOverScene', { score: this.score });
     } else {
       this.resetEntities();
     }
   }
 
   handleCorrectAnswer() {
-    this.score += 10;
+    this.score += 50;
     this.updateHUD();
     this.checkWinCondition();
   }
@@ -268,12 +241,12 @@ export default class GameScene extends Phaser.Scene {
     this.updateHUD();
     if (this.lives <= 0) {
       this.saveHighScore();
-      this.scene.start('GameOverScene', { score: this.score });
+      SceneHelper.transitionTo(this, 'GameOverScene', { score: this.score });
     }
   }
 
   saveHighScore() {
-    const highscore = localStorage.getItem('mathchase-highscore') || 0;
+    const highscore = parseInt(localStorage.getItem('mathchase-highscore') || 0);
     if (this.score > highscore) {
       localStorage.setItem('mathchase-highscore', this.score);
     }
@@ -281,6 +254,8 @@ export default class GameScene extends Phaser.Scene {
 
   resetEntities() {
     this.player.setPosition(this.playerStartPos.x, this.playerStartPos.y);
+    this.player.currentDirection = Phaser.NONE;
+    this.player.queuedDirection = Phaser.NONE;
     this.player.setVelocity(0);
 
     this.ghosts.getChildren().forEach((ghost, index) => {
@@ -291,7 +266,7 @@ export default class GameScene extends Phaser.Scene {
 
   checkWinCondition() {
     if (this.coinsCollected >= this.totalCoins) {
-      this.scene.start('LevelCompleteScene', {
+      SceneHelper.transitionTo(this, 'LevelCompleteScene', {
         score: this.score,
         level: this.level,
         lives: this.lives
