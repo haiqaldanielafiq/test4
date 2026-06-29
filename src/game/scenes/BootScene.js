@@ -88,6 +88,45 @@ export default class BootScene extends Phaser.Scene {
     coinGraphics.fillStyle(0xffff00, 1);
     coinGraphics.fillCircle(8, 8, 4);
     coinGraphics.generateTexture('coin', 16, 16);
+
+    // Generate Special Coin
+    const specialCoinGraphics = this.make.graphics({ x: 0, y: 0, add: false });
+    specialCoinGraphics.fillStyle(0xffff00, 1);
+    specialCoinGraphics.fillCircle(12, 12, 8);
+    specialCoinGraphics.lineStyle(2, 0xffffff, 1);
+    specialCoinGraphics.strokeCircle(12, 12, 8);
+    specialCoinGraphics.generateTexture('special-coin', 24, 24);
+
+    // Generate Ghosts
+    const ghostColors = {
+      'ghost-red': 0xff0000,
+      'ghost-pink': 0xffb8ff,
+      'ghost-cyan': 0x00ffff,
+      'ghost-orange': 0xffb852
+    };
+
+    Object.entries(ghostColors).forEach(([key, color]) => {
+      const g = this.make.graphics({ x: 0, y: 0, add: false });
+      g.fillStyle(color, 1);
+      // Head
+      g.fillCircle(16, 14, 12);
+      // Body
+      g.fillRect(4, 14, 24, 14);
+      // Bottom squiggles
+      g.fillCircle(8, 28, 4);
+      g.fillCircle(16, 28, 4);
+      g.fillCircle(24, 28, 4);
+
+      // Eyes
+      g.fillStyle(0xffffff, 1);
+      g.fillCircle(11, 12, 3);
+      g.fillCircle(21, 12, 3);
+      g.fillStyle(0x000000, 1);
+      g.fillCircle(11, 12, 1);
+      g.fillCircle(21, 12, 1);
+
+      g.generateTexture(key, 32, 32);
+    });
   }
 
   create() {
