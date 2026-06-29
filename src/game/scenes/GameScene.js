@@ -1,6 +1,7 @@
 import Phaser from 'phaser';
 import Player from '../objects/Player';
 import Ghost from '../objects/Ghost';
+import audioManager from '../utils/AudioManager';
 
 export default class GameScene extends Phaser.Scene {
   constructor() {
@@ -35,6 +36,9 @@ export default class GameScene extends Phaser.Scene {
     this.level = 1;
     this.coinsCollected = 0;
     this.totalCoins = 0;
+    this.combo = 0;
+    this.comboTimer = null;
+    this.bonusCoinTimer = 0;
   }
 
   init(data) {
@@ -44,6 +48,7 @@ export default class GameScene extends Phaser.Scene {
   }
 
   create() {
+    audioManager.startMusic();
     this.cameras.main.setBackgroundColor('#000000');
 
     this.walls = this.physics.add.staticGroup();
@@ -72,12 +77,14 @@ export default class GameScene extends Phaser.Scene {
           // Add special coins at corners
           if ((row === 1 && col === 1) || (row === 1 && col === 21) ||
               (row === 20 && col === 1) || (row === 20 && col === 21)) {
-            this.specialCoins.create(x, y, 'special-coin');
+            const coin = this.specialCoins.create(x, y, 'special-coin-0');
+            coin.play('special-coin-spin');
             this.totalCoins++;
           }
           // Add coin in empty spaces (except middle area and special coin corners)
           else if (!(row >= 9 && row <= 11 && col >= 9 && col <= 13)) {
-            this.coins.create(x, y, 'coin');
+            const coin = this.coins.create(x, y, 'coin-0');
+            coin.play('coin-spin');
             this.totalCoins++;
           }
         }
@@ -94,7 +101,18 @@ export default class GameScene extends Phaser.Scene {
 
     this.ghostSpawnPoints.forEach(point => {
       const ghost = new Ghost(this, point.x, point.y, point.texture);
+      // Increase ghost speed based on level
+      ghost.speed = 150 + (this.level - 1) * 20;
       this.ghosts.add(ghost);
+
+      // Spawn effect
+      ghost.setAlpha(0);
+      this.tweens.add({
+        targets: ghost,
+        alpha: 1,
+        duration: 1000,
+        ease: 'Power2'
+      });
     });
 
     // Add Player at a safe position (row 4, col 11)
@@ -114,8 +132,28 @@ export default class GameScene extends Phaser.Scene {
     this.cameras.main.startFollow(this.player, true, 0.1, 0.1);
     this.cameras.main.setZoom(1);
 
+    // Input for pausing
+    this.input.keyboard.on('keydown-ESC', () => {
+      this.pauseGame();
+    });
+
     // HUD setup
     this.createHUD();
+
+    // Particle emitter for coins
+    this.coinParticles = this.add.particles(0, 0, 'coin-0', {
+      speed: { min: 50, max: 100 },
+      scale: { start: 0.5, end: 0 },
+      alpha: { start: 1, end: 0 },
+      lifespan: 500,
+      gravityY: 200,
+      emitting: false
+    });
+  }
+
+  pauseGame() {
+    this.scene.pause();
+    this.scene.launch('PauseScene');
   }
 
   createHUD() {
@@ -151,11 +189,47 @@ export default class GameScene extends Phaser.Scene {
     this.ghosts.getChildren().forEach(ghost => {
       ghost.update(time, delta);
     });
+
+    // Bonus coin logic
+    this.bonusCoinTimer += delta;
+    if (this.bonusCoinTimer > 15000) { // Every 15 seconds
+      this.bonusCoinTimer = 0;
+      this.spawnBonusCoin();
+    }
+  }
+
+  spawnBonusCoin() {
+    const { width, height } = this.cameras.main;
+    const x = Phaser.Math.Between(100, width - 100);
+    const y = Phaser.Math.Between(100, height - 100);
+
+    const bonus = this.specialCoins.create(x, y, 'special-coin-0');
+    bonus.setTint(0x00ff00);
+    bonus.play('special-coin-spin');
+
+    // Auto destroy after 5 seconds if not collected
+    this.time.delayedCall(5000, () => {
+      if (bonus.active) bonus.destroy();
+    });
   }
 
   collectCoin(player, coin) {
+    audioManager.playCoin();
+
+    this.coinParticles.emitParticleAt(coin.x, coin.y, 5);
+
     coin.destroy();
-    this.score += 10;
+
+    // Combo system
+    this.combo++;
+    if (this.comboTimer) clearTimeout(this.comboTimer);
+    this.comboTimer = setTimeout(() => {
+      this.combo = 0;
+      this.updateHUD();
+    }, 2000);
+
+    const points = 10 * Math.min(this.combo, 5);
+    this.score += points;
     this.coinsCollected++;
     this.updateHUD();
     this.checkWinCondition();
@@ -170,10 +244,13 @@ export default class GameScene extends Phaser.Scene {
   }
 
   handleGhostCollision() {
+    audioManager.playGhost();
+    this.cameras.main.shake(300, 0.01);
     this.lives--;
     this.updateHUD();
 
     if (this.lives <= 0) {
+      this.saveHighScore();
       this.scene.start('GameOverScene', { score: this.score });
     } else {
       this.resetEntities();
@@ -190,7 +267,15 @@ export default class GameScene extends Phaser.Scene {
     this.lives--;
     this.updateHUD();
     if (this.lives <= 0) {
+      this.saveHighScore();
       this.scene.start('GameOverScene', { score: this.score });
+    }
+  }
+
+  saveHighScore() {
+    const highscore = localStorage.getItem('mathchase-highscore') || 0;
+    if (this.score > highscore) {
+      localStorage.setItem('mathchase-highscore', this.score);
     }
   }
 
@@ -216,7 +301,8 @@ export default class GameScene extends Phaser.Scene {
 
   updateHUD() {
     if (this.scoreText) {
-      this.scoreText.setText(`Score: ${this.score}`);
+      const comboText = this.combo > 1 ? ` (x${Math.min(this.combo, 5)})` : '';
+      this.scoreText.setText(`Score: ${this.score}${comboText}`);
     }
     if (this.livesText) {
       this.livesText.setText(`Lives: ${this.lives}`);

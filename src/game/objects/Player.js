@@ -2,7 +2,7 @@ import Phaser from 'phaser';
 
 export default class Player extends Phaser.Physics.Arcade.Sprite {
   constructor(scene, x, y) {
-    super(scene, x, y, 'pacman-closed');
+    super(scene, x, y, 'pacman-0');
 
     // Add to scene and enable physics
     scene.add.existing(this);

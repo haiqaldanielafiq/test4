@@ -6,6 +6,8 @@ import GameScene from '../game/scenes/GameScene';
 import QuestionScene from '../game/scenes/QuestionScene';
 import GameOverScene from '../game/scenes/GameOverScene';
 import LevelCompleteScene from '../game/scenes/LevelCompleteScene';
+import SettingsScene from '../game/scenes/SettingsScene';
+import PauseScene from '../game/scenes/PauseScene';
 
 const PhaserGame = () => {
   const gameRef = useRef(null);
@@ -31,7 +33,16 @@ const PhaserGame = () => {
           debug: false
         }
       },
-      scene: [BootScene, MenuScene, GameScene, QuestionScene, GameOverScene, LevelCompleteScene],
+      scene: [
+        BootScene,
+        MenuScene,
+        GameScene,
+        QuestionScene,
+        GameOverScene,
+        LevelCompleteScene,
+        SettingsScene,
+        PauseScene
+      ],
     };
 
     gameRef.current = new Phaser.Game(config);

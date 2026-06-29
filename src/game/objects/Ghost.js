@@ -2,7 +2,7 @@ import Phaser from 'phaser';
 
 export default class Ghost extends Phaser.Physics.Arcade.Sprite {
   constructor(scene, x, y, texture) {
-    super(scene, x, y, texture);
+    super(scene, x, y, `${texture}-0`);
 
     scene.add.existing(this);
     scene.physics.add.existing(this);
@@ -11,6 +11,9 @@ export default class Ghost extends Phaser.Physics.Arcade.Sprite {
     this.setCollideWorldBounds(true);
     this.speed = 150;
     this.scene = scene;
+
+    // Animation
+    this.play(`${texture}-wiggle`);
 
     // AI movement timer
     this.moveTimer = 0;
