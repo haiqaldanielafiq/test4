@@ -1,5 +1,6 @@
 import Phaser from 'phaser';
 import questions from '../data/questions';
+import audioManager from '../utils/AudioManager';
 
 export default class QuestionScene extends Phaser.Scene {
   constructor() {
@@ -29,6 +30,27 @@ export default class QuestionScene extends Phaser.Scene {
       align: 'center',
       wordWrap: { width: width * 0.8 }
     }).setOrigin(0.5);
+
+    // Timer
+    this.timeLeft = 15;
+    this.timerText = this.add.text(width / 2, height * 0.1, `Time: ${this.timeLeft}`, {
+      fontSize: '40px',
+      fill: '#ff0000',
+      fontFamily: 'Arial',
+      fontWeight: 'bold'
+    }).setOrigin(0.5);
+
+    this.timerEvent = this.time.addEvent({
+      delay: 1000,
+      callback: () => {
+        this.timeLeft--;
+        this.timerText.setText(`Time: ${this.timeLeft}`);
+        if (this.timeLeft <= 0) {
+          this.handleAnswer(false);
+        }
+      },
+      loop: true
+    });
 
     // Options
     const buttonWidth = 500;
@@ -81,9 +103,13 @@ export default class QuestionScene extends Phaser.Scene {
   }
 
   handleAnswer(isCorrect) {
+    if (this.timerEvent) this.timerEvent.destroy();
+
     if (isCorrect) {
+      audioManager.playCorrect();
       this.mainScene.handleCorrectAnswer();
     } else {
+      audioManager.playWrong();
       this.mainScene.handleWrongAnswer();
     }
     this.scene.stop();

@@ -62,42 +62,55 @@ export default class BootScene extends Phaser.Scene {
   generateAssets() {
     // Generate Neon Blue Wall Tile
     const wallGraphics = this.make.graphics({ x: 0, y: 0, add: false });
-    wallGraphics.lineStyle(2, 0x0000ff);
+    // Outer glow
+    wallGraphics.lineStyle(4, 0x0000ff, 0.3);
     wallGraphics.strokeRect(2, 2, 28, 28);
+    // Main line
+    wallGraphics.lineStyle(2, 0x00ffff, 1);
+    wallGraphics.strokeRect(4, 4, 24, 24);
+    // Inner detail
+    wallGraphics.lineStyle(1, 0x0000ff, 0.5);
+    wallGraphics.strokeRect(10, 10, 12, 12);
     wallGraphics.generateTexture('wall', 32, 32);
 
-    // Generate Pac-Man (Mouth Closed)
-    const pacmanClosed = this.make.graphics({ x: 0, y: 0, add: false });
-    pacmanClosed.fillStyle(0xffff00, 1);
-    pacmanClosed.fillCircle(16, 16, 14);
-    pacmanClosed.generateTexture('pacman-closed', 32, 32);
+    // Generate Pac-Man frames for smooth animation
+    const pacmanAngles = [0, 15, 30, 45];
+    pacmanAngles.forEach((angle, index) => {
+      const g = this.make.graphics({ x: 0, y: 0, add: false });
+      g.fillStyle(0xffff00, 1);
+      if (angle === 0) {
+        g.fillCircle(16, 16, 14);
+      } else {
+        g.beginPath();
+        g.moveTo(16, 16);
+        g.arc(16, 16, 14, Phaser.Math.DegToRad(angle), Phaser.Math.DegToRad(360 - angle));
+        g.closePath();
+        g.fill();
+      }
+      g.generateTexture(`pacman-${index}`, 32, 32);
+    });
 
-    // Generate Pac-Man (Mouth Open)
-    const pacmanOpen = this.make.graphics({ x: 0, y: 0, add: false });
-    pacmanOpen.fillStyle(0xffff00, 1);
-    // Draw a pie shape for mouth open
-    pacmanOpen.beginPath();
-    pacmanOpen.moveTo(16, 16);
-    pacmanOpen.arc(16, 16, 14, Phaser.Math.DegToRad(30), Phaser.Math.DegToRad(330));
-    pacmanOpen.closePath();
-    pacmanOpen.fill();
-    pacmanOpen.generateTexture('pacman-open', 32, 32);
+    // Generate Coin frames
+    for (let i = 0; i < 4; i++) {
+      const g = this.make.graphics({ x: 0, y: 0, add: false });
+      g.fillStyle(0xffff00, 1);
+      const scaleX = [1, 0.7, 0.4, 0.7][i];
+      g.fillEllipse(8, 8, 8 * scaleX, 8);
+      g.generateTexture(`coin-${i}`, 16, 16);
+    }
 
-    // Generate Coin
-    const coinGraphics = this.make.graphics({ x: 0, y: 0, add: false });
-    coinGraphics.fillStyle(0xffff00, 1);
-    coinGraphics.fillCircle(8, 8, 4);
-    coinGraphics.generateTexture('coin', 16, 16);
+    // Generate Special Coin frames
+    for (let i = 0; i < 4; i++) {
+      const g = this.make.graphics({ x: 0, y: 0, add: false });
+      g.fillStyle(0xffff00, 1);
+      const scaleX = [1, 0.7, 0.4, 0.7][i];
+      g.fillEllipse(12, 12, 12 * scaleX, 12);
+      g.lineStyle(2, 0xffffff, 1);
+      g.strokeEllipse(12, 12, 12 * scaleX, 12);
+      g.generateTexture(`special-coin-${i}`, 24, 24);
+    }
 
-    // Generate Special Coin
-    const specialCoinGraphics = this.make.graphics({ x: 0, y: 0, add: false });
-    specialCoinGraphics.fillStyle(0xffff00, 1);
-    specialCoinGraphics.fillCircle(12, 12, 8);
-    specialCoinGraphics.lineStyle(2, 0xffffff, 1);
-    specialCoinGraphics.strokeCircle(12, 12, 8);
-    specialCoinGraphics.generateTexture('special-coin', 24, 24);
-
-    // Generate Ghosts
+    // Generate Ghosts with wiggling animation
     const ghostColors = {
       'ghost-red': 0xff0000,
       'ghost-pink': 0xffb8ff,
@@ -106,26 +119,36 @@ export default class BootScene extends Phaser.Scene {
     };
 
     Object.entries(ghostColors).forEach(([key, color]) => {
-      const g = this.make.graphics({ x: 0, y: 0, add: false });
-      g.fillStyle(color, 1);
-      // Head
-      g.fillCircle(16, 14, 12);
-      // Body
-      g.fillRect(4, 14, 24, 14);
-      // Bottom squiggles
-      g.fillCircle(8, 28, 4);
-      g.fillCircle(16, 28, 4);
-      g.fillCircle(24, 28, 4);
+      for (let i = 0; i < 2; i++) {
+        const g = this.make.graphics({ x: 0, y: 0, add: false });
+        g.fillStyle(color, 1);
+        // Head
+        g.fillCircle(16, 14, 12);
+        // Body
+        g.fillRect(4, 14, 24, 12);
 
-      // Eyes
-      g.fillStyle(0xffffff, 1);
-      g.fillCircle(11, 12, 3);
-      g.fillCircle(21, 12, 3);
-      g.fillStyle(0x000000, 1);
-      g.fillCircle(11, 12, 1);
-      g.fillCircle(21, 12, 1);
+        // Bottom squiggles
+        if (i === 0) {
+          g.fillCircle(8, 26, 4);
+          g.fillCircle(16, 26, 4);
+          g.fillCircle(24, 26, 4);
+        } else {
+          g.fillCircle(12, 26, 4);
+          g.fillCircle(20, 26, 4);
+          g.fillRect(4, 26, 4, 4);
+          g.fillRect(24, 26, 4, 4);
+        }
 
-      g.generateTexture(key, 32, 32);
+        // Eyes
+        g.fillStyle(0xffffff, 1);
+        g.fillCircle(11, 12, 3);
+        g.fillCircle(21, 12, 3);
+        g.fillStyle(0x000000, 1);
+        g.fillCircle(11, 12, 1);
+        g.fillCircle(21, 12, 1);
+
+        g.generateTexture(`${key}-${i}`, 32, 32);
+      }
     });
   }
 
@@ -134,11 +157,52 @@ export default class BootScene extends Phaser.Scene {
     this.anims.create({
       key: 'pacman-chomp',
       frames: [
-        { key: 'pacman-closed' },
-        { key: 'pacman-open' }
+        { key: 'pacman-0' },
+        { key: 'pacman-1' },
+        { key: 'pacman-2' },
+        { key: 'pacman-3' },
+        { key: 'pacman-2' },
+        { key: 'pacman-1' }
       ],
-      frameRate: 10,
+      frameRate: 15,
       repeat: -1
+    });
+
+    this.anims.create({
+      key: 'coin-spin',
+      frames: [
+        { key: 'coin-0' },
+        { key: 'coin-1' },
+        { key: 'coin-2' },
+        { key: 'coin-3' }
+      ],
+      frameRate: 8,
+      repeat: -1
+    });
+
+    this.anims.create({
+      key: 'special-coin-spin',
+      frames: [
+        { key: 'special-coin-0' },
+        { key: 'special-coin-1' },
+        { key: 'special-coin-2' },
+        { key: 'special-coin-3' }
+      ],
+      frameRate: 8,
+      repeat: -1
+    });
+
+    const ghostColors = ['red', 'pink', 'cyan', 'orange'];
+    ghostColors.forEach(color => {
+      this.anims.create({
+        key: `ghost-${color}-wiggle`,
+        frames: [
+          { key: `ghost-${color}-0` },
+          { key: `ghost-${color}-1` }
+        ],
+        frameRate: 4,
+        repeat: -1
+      });
     });
 
     this.scene.start('MenuScene');

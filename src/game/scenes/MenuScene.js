@@ -1,4 +1,5 @@
 import Phaser from 'phaser';
+import audioManager from '../utils/AudioManager';
 
 export default class MenuScene extends Phaser.Scene {
   constructor() {
@@ -8,87 +9,96 @@ export default class MenuScene extends Phaser.Scene {
   create() {
     const { width, height } = this.cameras.main;
 
-    // Display title
-    this.add.text(width / 2, height * 0.3, 'Math Chase', {
-      fontSize: '84px',
-      fill: '#ffffff',
-      fontFamily: 'Arial',
-      fontWeight: 'bold'
+    // Display title with glow effect
+    const title = this.add.text(width / 2, height * 0.25, 'MATH CHASE', {
+      fontSize: '120px',
+      fill: '#ffff00',
+      fontFamily: 'Arial Black',
+      stroke: '#000000',
+      strokeThickness: 10
     }).setOrigin(0.5);
 
+    // Title pulse animation
+    this.tweens.add({
+      targets: title,
+      scale: 1.05,
+      duration: 1000,
+      yoyo: true,
+      repeat: -1,
+      ease: 'Quad.easeInOut'
+    });
+
     // Display subtitle
-    this.add.text(width / 2, height * 0.45, 'Educational Pac-Man Adventure', {
-      fontSize: '32px',
-      fill: '#ffff00', // Pac-Man yellow for flair
+    this.add.text(width / 2, height * 0.4, 'Year 4 Money Edition', {
+      fontSize: '40px',
+      fill: '#ffffff',
       fontFamily: 'Arial',
       fontStyle: 'italic'
     }).setOrigin(0.5);
 
-    // Start Button Container for animation
-    const buttonContainer = this.add.container(width / 2, height * 0.7);
+    // Decorative Pac-Man and Ghost
+    const pacman = this.add.sprite(width * 0.2, height * 0.7, 'pacman-0');
+    pacman.setScale(2);
+    pacman.play('pacman-chomp');
 
-    // Button background
+    const ghost = this.add.sprite(width * 0.8, height * 0.7, 'ghost-red-0');
+    ghost.setScale(2);
+    ghost.play('ghost-red-wiggle');
+
+    // Start Button
+    this.createButton(width / 2, height * 0.6, 'Start Game', () => {
+      this.scene.start('GameScene', { score: 0, lives: 3, level: 1 });
+    });
+
+    // Settings Button
+    this.createButton(width / 2, height * 0.75, 'Settings', () => {
+      this.scene.start('SettingsScene');
+    });
+
+    // Start background music if not already playing
+    audioManager.startMusic();
+  }
+
+  createButton(x, y, text, callback) {
+    const container = this.add.container(x, y);
     const btnBg = this.add.graphics();
     btnBg.fillStyle(0xffffff, 1);
-    btnBg.fillRoundedRect(-150, -40, 300, 80, 20);
+    btnBg.fillRoundedRect(-180, -40, 360, 80, 20);
+    btnBg.lineStyle(4, 0x0000ff, 1);
+    btnBg.strokeRoundedRect(-180, -40, 360, 80, 20);
 
-    // Button text
-    const startText = this.add.text(0, 0, 'Start Game', {
+    const btnText = this.add.text(0, 0, text, {
       fontSize: '40px',
       fill: '#000000',
       fontFamily: 'Arial',
       fontWeight: 'bold'
     }).setOrigin(0.5);
 
-    buttonContainer.add([btnBg, startText]);
+    container.add([btnBg, btnText]);
+    const hitArea = new Phaser.Geom.Rectangle(-180, -40, 360, 80);
+    container.setInteractive(hitArea, Phaser.Geom.Rectangle.Contains);
 
-    // Make button interactive
-    const hitArea = new Phaser.Geom.Rectangle(-150, -40, 300, 80);
-    buttonContainer.setInteractive(hitArea, Phaser.Geom.Rectangle.Contains);
-
-    // Pulsing animation
-    this.tweens.add({
-      targets: buttonContainer,
-      scale: 1.1,
-      duration: 800,
-      yoyo: true,
-      repeat: -1,
-      ease: 'Sine.easeInOut'
+    container.on('pointerdown', () => {
+      audioManager.playClick();
+      callback();
     });
 
-    // Hover effects
-    buttonContainer.on('pointerover', () => {
+    container.on('pointerover', () => {
       btnBg.clear();
-      btnBg.fillStyle(0xffff00, 1); // Yellow on hover
-      btnBg.fillRoundedRect(-150, -40, 300, 80, 20);
-      this.input.setDefaultCursor('pointer');
+      btnBg.fillStyle(0xffff00, 1);
+      btnBg.fillRoundedRect(-180, -40, 360, 80, 20);
+      btnBg.lineStyle(4, 0x00ffff, 1);
+      btnBg.strokeRoundedRect(-180, -40, 360, 80, 20);
+      container.setScale(1.1);
     });
 
-    buttonContainer.on('pointerout', () => {
+    container.on('pointerout', () => {
       btnBg.clear();
       btnBg.fillStyle(0xffffff, 1);
-      btnBg.fillRoundedRect(-150, -40, 300, 80, 20);
-      this.input.setDefaultCursor('default');
+      btnBg.fillRoundedRect(-180, -40, 360, 80, 20);
+      btnBg.lineStyle(4, 0x0000ff, 1);
+      btnBg.strokeRoundedRect(-180, -40, 360, 80, 20);
+      container.setScale(1);
     });
-
-    buttonContainer.on('pointerdown', () => {
-      this.scene.start('GameScene');
-    });
-
-    // Handle responsiveness
-    this.scale.on('resize', this.resize, this);
-
-    // Cleanup on scene shutdown
-    this.events.on('shutdown', () => {
-      this.scale.off('resize', this.resize, this);
-    });
-  }
-
-  resize(gameSize) {
-    const { width, height } = gameSize;
-    this.cameras.resize(width, height);
-    // Ideally, reposition elements here if they aren't using relative positioning
-    // Since we used fractions of width/height in create, they'll stay centered if we re-run logic
-    // But for a simple foundation, the FIT scale mode handles most of this.
   }
 }
