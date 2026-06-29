@@ -8,6 +8,9 @@ import GameOverScene from '../game/scenes/GameOverScene';
 import LevelCompleteScene from '../game/scenes/LevelCompleteScene';
 import SettingsScene from '../game/scenes/SettingsScene';
 import PauseScene from '../game/scenes/PauseScene';
+import CreditsScene from '../game/scenes/CreditsScene';
+import HelpScene from '../game/scenes/HelpScene';
+import AboutScene from '../game/scenes/AboutScene';
 
 const PhaserGame = () => {
   const gameRef = useRef(null);
@@ -41,7 +44,10 @@ const PhaserGame = () => {
         GameOverScene,
         LevelCompleteScene,
         SettingsScene,
-        PauseScene
+        PauseScene,
+        CreditsScene,
+        HelpScene,
+        AboutScene
       ],
     };
 
